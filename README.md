@@ -58,5 +58,11 @@ Milky Mailer uses `AMQP` to get messages from queue.
 ### Message body
 Message body is a `string` of type `ContentType` from headers.
 
+## TODO list
+- [ ] Add support non-TLS SMTP connection
+- [ ] Add support for configuration without `Consul kv`
+- [ ] Add beautiful error handler
+- [ ] Add validation for messages from AMQP
+
 ## License
 Created by [MilkHunters team](https://milkhunters.ru) under [Creative Commons Zero v1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/)
