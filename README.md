@@ -3,7 +3,6 @@ Simple AMQP based mailer on Golang
 
 ## Docker Quick Start
 Build the image:
-```
 ```bash
 docker build ./ -t milky-mailer
 ```
@@ -58,3 +57,6 @@ Milky Mailer uses `AMQP` to get messages from queue.
 
 ### Message body
 Message body is a `string` of type `ContentType` from headers.
+
+## License
+Created by [MilkHunters team](https://milkhunters.ru) under [Creative Commons Zero v1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/)
