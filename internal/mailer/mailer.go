@@ -27,6 +27,8 @@ func SendEmail(cfg *configer.EmailSenderConfig, data *EmailData) error {
 	m.SetBody(data.ContentType, data.Body)
 
 	d := mail.NewDialer(cfg.Host, cfg.Port, cfg.User, cfg.Password)
+
+	// TODO Надо сделать проверку на то, что в конфиге указано использовать SSL
 	d.TLSConfig = &tls.Config{InsecureSkipVerify: false, ServerName: cfg.Host}
 
 	err := d.DialAndSend(m)
