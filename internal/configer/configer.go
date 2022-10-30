@@ -24,11 +24,11 @@ type EmailSenderConfig struct {
 	Port     int
 }
 
-func GetConfig(appName string, consulHost string) (*AMQPConfig, *EmailSenderConfig, error) {
+func GetConfig(appName string, consulAddress string) (*AMQPConfig, *EmailSenderConfig, error) {
 
 	// Configure Consul connection
 	consulCfg := api.DefaultConfig()
-	consulCfg.Address = consulHost + ":8500"
+	consulCfg.Address = consulAddress
 
 	// Create a new client
 	client, err := api.NewClient(consulCfg)

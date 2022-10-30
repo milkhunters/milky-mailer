@@ -9,11 +9,11 @@ import (
 func main() {
 	// Init flags
 	appName := flag.String("APP_NAME", "milky-mailer", "App name for consul")
-	consulHost := flag.String("CONSUL_HOST", "192.168.3.41", "Consul host")
+	consulAddress := flag.String("CONSUL_ADDRESS", "localhost:8500", "Consul address")
 	flag.Parse()
 
 	// Get config
-	AMQPCfg, EmailCfg, err := configer.GetConfig(*appName, *consulHost)
+	AMQPCfg, EmailCfg, err := configer.GetConfig(*appName, *consulAddress)
 	if err != nil {
 		panic(err)
 	}
