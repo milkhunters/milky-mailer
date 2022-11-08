@@ -26,7 +26,7 @@ func GetConfig() (*AMQPConfig, *mailer.EmailSenderConfig, error) {
 	consulAddress := flag.String("CONSUL_ADDRESS", "", "Consul address")
 	flag.Parse()
 
-	// Get data for init from env
+	// Get data for init from env (priority)
 	if os.Getenv("APP_NAME") != "" {
 		*appName = os.Getenv("APP_NAME")
 	}
@@ -34,7 +34,7 @@ func GetConfig() (*AMQPConfig, *mailer.EmailSenderConfig, error) {
 		*consulAddress = os.Getenv("CONSUL_ADDRESS")
 	}
 
-	// Set default values
+	// Set default values (if not set)
 	if *appName == "" {
 		*appName = "milky-mailer"
 	}

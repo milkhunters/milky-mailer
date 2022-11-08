@@ -13,8 +13,10 @@ docker run milky-mailer
 
 ## Configuration
 
-### Environment variables
-Milky Mailer uses environment variables to get configuration from `Consul kv`.
+### Environment variables and flags
+Milky Mailer uses environment variables and flags to get configuration from `Consul kv`.
+
+Environment variables have higher priority than flags.
 
 | Variable         | Description                                      | Default          |
 |------------------|--------------------------------------------------|------------------|
@@ -24,7 +26,7 @@ Milky Mailer uses environment variables to get configuration from `Consul kv`.
 ### Consul kv
 Milky Mailer uses `Consul kv` to store configuration.
 
-All values **required** for the start.
+All values **required** for work.
 
 | Key                       | Description                      | Example            |
 |---------------------------|----------------------------------|--------------------|
@@ -41,7 +43,9 @@ All values **required** for the start.
 
 
 ## TLS
-Milky Mailer support **only TLS** SMTP connection.
+Milky Mailer support SMTP connection **only over TLS**.
+
+In the future, it will be possible to disable TLS.
 
 ## AMQP
 Milky Mailer uses `AMQP` to get messages from queue.
@@ -63,6 +67,9 @@ Message body is a `string` of type `ContentType` from headers.
 - [ ] Add support for configuration without `Consul kv`
 - [ ] Add beautiful error handler
 - [ ] Add validation for messages from AMQP
+- [ ] Add tests
+- [ ] Use `viper` for configuration
+- [ ] Replace old `amqp` package to `amqp091-go`
 
 ## License
-Created by [MilkHunters team](https://milkhunters.ru) under [Creative Commons Zero v1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/)
+Created by [MilkHunters team](https://milkhunters.ru) under [Creative Commons Zero v1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/) license.

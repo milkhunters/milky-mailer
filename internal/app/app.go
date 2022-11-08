@@ -1,5 +1,6 @@
 package app
 
+// TODO заменить amqp на amqp091-go
 import (
 	"fmt"
 	"github.com/streadway/amqp"
@@ -57,6 +58,7 @@ func Run(cfg *configer.AMQPConfig, mailerCfg *mailer.EmailSenderConfig) {
 		log.Printf("Consumer ready, PID: %d", os.Getpid())
 		for d := range messageChannel {
 
+			// TODO Использовать нативный ContentType
 			// Prepare message data
 			mailData := mailer.EmailData{
 				To:          d.Headers["To"].(string),
