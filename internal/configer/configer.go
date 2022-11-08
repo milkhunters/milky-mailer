@@ -63,6 +63,9 @@ func GetConfig() (*AMQPConfig, *mailer.EmailSenderConfig, error) {
 	// TODO Использовать viper
 	var AMQPCfg AMQPConfig
 	pair, _, err = kv.Get(fmt.Sprintf("%s/amqp/host", *appName), nil)
+	if err != nil {
+		return nil, nil, err
+	}
 	AMQPCfg.Host = string(pair.Value)
 	pair, _, err = kv.Get(fmt.Sprintf("%s/amqp/port", *appName), nil)
 	AMQPCfg.Port, err = strconv.Atoi(string(pair.Value))
