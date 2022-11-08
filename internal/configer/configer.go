@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/hashicorp/consul/api"
+	"log"
 	"milky-mailer/internal/mailer"
 	"os"
 	"strconv"
@@ -40,6 +41,9 @@ func GetConfig() (*AMQPConfig, *mailer.EmailSenderConfig, error) {
 	if *consulAddress == "" {
 		*consulAddress = "localhost:8500"
 	}
+
+	log.Printf("APP_NAME: %s", *appName)
+	log.Printf("CONSUL_ADDRESS: %s", *consulAddress)
 
 	// Configure Consul connection
 	consulCfg := api.DefaultConfig()
