@@ -3,7 +3,6 @@ package mailer
 import (
 	"crypto/tls"
 	"gopkg.in/mail.v2"
-	"milky-mailer/internal/configer"
 )
 
 type EmailData struct {
@@ -14,24 +13,32 @@ type EmailData struct {
 	Body        string
 }
 
-func SendEmail(cfg *configer.EmailSenderConfig, data *EmailData) error {
+type EmailSenderConfig struct {
+	From     string
+	User     string
+	Host     string
+	Password string
+	Port     int
+}
+
+func SendEmail(cfg *EmailSenderConfig, data *EmailData) error {
 
 	// TODO Валидация структур приходящих данных
 
-	m := mail.NewMessage()
+	email := mail.NewMessage()
 
-	m.SetHeader("From", data.FromName+" <"+cfg.From+">")
-	m.SetHeader("To", data.To)
-	m.SetHeader("Subject", data.Subject)
+	email.SetHeader("From", data.FromName+" <"+cfg.From+">")
+	email.SetHeader("To", data.To)
+	email.SetHeader("Subject", data.Subject)
 
-	m.SetBody(data.ContentType, data.Body)
+	email.SetBody(data.ContentType, data.Body)
 
-	d := mail.NewDialer(cfg.Host, cfg.Port, cfg.User, cfg.Password)
+	dialer := mail.NewDialer(cfg.Host, cfg.Port, cfg.User, cfg.Password)
 
 	// TODO Надо сделать проверку на то, что в конфиге указано использовать SSL
-	d.TLSConfig = &tls.Config{InsecureSkipVerify: false, ServerName: cfg.Host}
+	dialer.TLSConfig = &tls.Config{InsecureSkipVerify: false, ServerName: cfg.Host}
 
-	err := d.DialAndSend(m)
+	err := dialer.DialAndSend(email)
 	if err != nil {
 		return err
 	}

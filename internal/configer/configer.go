@@ -1,8 +1,11 @@
 package configer
 
 import (
+	"flag"
 	"fmt"
 	"github.com/hashicorp/consul/api"
+	"milky-mailer/internal/mailer"
+	"os"
 	"strconv"
 )
 
@@ -16,19 +19,31 @@ type AMQPConfig struct {
 	Queue    string
 }
 
-type EmailSenderConfig struct {
-	From     string
-	User     string
-	Host     string
-	Password string
-	Port     int
-}
+func GetConfig() (*AMQPConfig, *mailer.EmailSenderConfig, error) {
+	// Get data for init from flags
+	appName := flag.String("APP_NAME", "", "App name for consul")
+	consulAddress := flag.String("CONSUL_ADDRESS", "", "Consul address")
+	flag.Parse()
 
-func GetConfig(appName string, consulAddress string) (*AMQPConfig, *EmailSenderConfig, error) {
+	// Get data for init from env
+	if os.Getenv("APP_NAME") != "" {
+		*appName = os.Getenv("APP_NAME")
+	}
+	if os.Getenv("CONSUL_ADDRESS") != "" {
+		*consulAddress = os.Getenv("CONSUL_ADDRESS")
+	}
+
+	// Set default values
+	if *appName == "" {
+		*appName = "milky-mailer"
+	}
+	if *consulAddress == "" {
+		*consulAddress = "localhost:8500"
+	}
 
 	// Configure Consul connection
 	consulCfg := api.DefaultConfig()
-	consulCfg.Address = consulAddress
+	consulCfg.Address = *consulAddress
 
 	// Create a new client
 	client, err := api.NewClient(consulCfg)
@@ -41,28 +56,29 @@ func GetConfig(appName string, consulAddress string) (*AMQPConfig, *EmailSenderC
 	// Get values from consul
 	var pair *api.KVPair
 
+	// TODO Использовать viper
 	var AMQPCfg AMQPConfig
-	pair, _, err = kv.Get(fmt.Sprintf("%s/amqp/host", appName), nil)
+	pair, _, err = kv.Get(fmt.Sprintf("%s/amqp/host", *appName), nil)
 	AMQPCfg.Host = string(pair.Value)
-	pair, _, err = kv.Get(fmt.Sprintf("%s/amqp/port", appName), nil)
+	pair, _, err = kv.Get(fmt.Sprintf("%s/amqp/port", *appName), nil)
 	AMQPCfg.Port, err = strconv.Atoi(string(pair.Value))
-	pair, _, err = kv.Get(fmt.Sprintf("%s/amqp/user", appName), nil)
+	pair, _, err = kv.Get(fmt.Sprintf("%s/amqp/user", *appName), nil)
 	AMQPCfg.User = string(pair.Value)
-	pair, _, err = kv.Get(fmt.Sprintf("%s/amqp/password", appName), nil)
+	pair, _, err = kv.Get(fmt.Sprintf("%s/amqp/password", *appName), nil)
 	AMQPCfg.Password = string(pair.Value)
-	pair, _, err = kv.Get(fmt.Sprintf("%s/amqp/queue", appName), nil)
+	pair, _, err = kv.Get(fmt.Sprintf("%s/amqp/queue", *appName), nil)
 	AMQPCfg.Queue = string(pair.Value)
 
-	var EmailCfg EmailSenderConfig
-	pair, _, err = kv.Get(fmt.Sprintf("%s/email/from", appName), nil)
+	var EmailCfg mailer.EmailSenderConfig
+	pair, _, err = kv.Get(fmt.Sprintf("%s/email/from", *appName), nil)
 	EmailCfg.From = string(pair.Value)
-	pair, _, err = kv.Get(fmt.Sprintf("%s/email/user", appName), nil)
+	pair, _, err = kv.Get(fmt.Sprintf("%s/email/user", *appName), nil)
 	EmailCfg.User = string(pair.Value)
-	pair, _, err = kv.Get(fmt.Sprintf("%s/email/host", appName), nil)
+	pair, _, err = kv.Get(fmt.Sprintf("%s/email/host", *appName), nil)
 	EmailCfg.Host = string(pair.Value)
-	pair, _, err = kv.Get(fmt.Sprintf("%s/email/password", appName), nil)
+	pair, _, err = kv.Get(fmt.Sprintf("%s/email/password", *appName), nil)
 	EmailCfg.Password = string(pair.Value)
-	pair, _, err = kv.Get(fmt.Sprintf("%s/email/port", appName), nil)
+	pair, _, err = kv.Get(fmt.Sprintf("%s/email/port", *appName), nil)
 	EmailCfg.Port, err = strconv.Atoi(string(pair.Value))
 
 	if err != nil {

@@ -16,8 +16,9 @@ func handleError(err error, msg string) {
 	}
 }
 
-func Run(cfg *configer.AMQPConfig, mailerCfg *configer.EmailSenderConfig) {
+func Run(cfg *configer.AMQPConfig, mailerCfg *mailer.EmailSenderConfig) {
 
+	// TODO Экранизировать строки
 	conn, err := amqp.Dial(fmt.Sprintf("amqp://%s:%s@%s:%d/", cfg.User, cfg.Password, cfg.Host, cfg.Port))
 	handleError(err, "Can't connect to AMQP")
 	defer conn.Close()
