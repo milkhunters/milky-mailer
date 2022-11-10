@@ -63,8 +63,8 @@ func Run(cfg *configer.AMQPConfig, mailerCfg *mailer.EmailSenderConfig) {
 			mailData := mailer.EmailData{
 				To:          d.Headers["To"].(string),
 				Subject:     d.Headers["Subject"].(string),
-				ContentType: d.Headers["ContentType"].(string),
 				FromName:    d.Headers["FromName"].(string),
+				ContentType: d.ContentType,
 				Body:        string(d.Body),
 			}
 
