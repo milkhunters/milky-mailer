@@ -57,10 +57,12 @@ Milky Mailer uses `AMQP` to get messages from queue.
 | `To`          | E-mail address for `To` header   | `to.user@example.com`       |
 | `FromName`    | Name of sender for `From` header | `Milkteam corp.`            |
 | `Subject`     | E-mail subject                   | `Hello, world!`             |
-| `ContentType` | E-mail content type of body      | `text/plain` or `text/html` |
 
 ### Message body
-Message body is a `string` of type `ContentType` from headers.
+Message body is a `string` of type `ContentType`.
+
+### Message `ContentType`
+Message `ContentType` is a MIMO type (example: `text/plain` or `text/html`). It field uses for email header `ContentType`. 
 
 ## TODO list
 - [ ] Add support non-TLS SMTP connection
