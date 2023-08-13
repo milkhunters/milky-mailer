@@ -1,6 +1,8 @@
 # Milky Mailer
 Simple AMQP based mailer on Golang
 
+[![Build Status](https://drone.milkhunters.ru/api/badges/milkhunters/milky-mailer/status.svg?ref=refs/heads/main)](https://drone.milkhunters.ru/milkhunters/milky-mailer)
+
 ## Docker Quick Start
 Build the image:
 ```bash
