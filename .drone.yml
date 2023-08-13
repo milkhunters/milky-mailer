@@ -4,11 +4,13 @@ name: build-and-deploy
 
 steps:
   - name: build
+    privileged: true
     image: docker:latest
     commands:
       - docker build -t app-name-env-mode:DRONE_BUILD_NUMBER .
       
   - name: deploy
+    privileged: true
     image: docker:latest
     commands:
       - docker run -d --restart=always -u 0 --name app-name-env-mode -e APP_NAME=app-name -e CONSUL_ADDRESS=consul-address -m 512m --cpus=1 app-name-env-mode:DRONE_BUILD_NUMBER
