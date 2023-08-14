@@ -3,12 +3,14 @@ type: docker
 name: build-and-deploy
 
 steps:
-  - name: build
-    privileged: true
-    image: docker:latest
+  - name: docker  
+    image: plugins/docker
+    settings:
+      repo: registry.milkhunters.ru/milk-back
+      registry: registry.milkhunters.ru
     commands:
       - docker build -t app-name-env-mode:DRONE_BUILD_NUMBER .
-      
+  
   - name: deploy
     privileged: true
     image: docker:latest
