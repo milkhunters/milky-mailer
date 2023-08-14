@@ -16,7 +16,7 @@ steps:
     environment:
       APP_NAME:
         from_secret: app-name
-      ENV_NODE:
+      ENV_MODE:
         from_secret: env-mode
       CONSUL_ADDRESS:
         from_secret: consul-address
