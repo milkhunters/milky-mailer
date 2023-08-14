@@ -12,7 +12,7 @@ steps:
       - sleep 5 ## give docker enough time to start
       - docker ps -a
 
-  - name: docker  
+  - name: build  
     image: docker:dind
     #settings:
       #repo: registry.milkhunters.ru/milk-back
