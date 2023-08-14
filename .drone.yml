@@ -13,6 +13,7 @@ steps:
     volumes:
       - name: dockersock
         path: /var/run
+    secrets: [ APP_NAME, env-mode, consul-address ]
     environment:
       APP_NAME:
         from_secret: APP_NAME
@@ -31,9 +32,10 @@ steps:
     volumes:
       - name: dockersock
         path: /var/run
+    secrets: [ APP_NAME, env-mode, consul-address ]
     environment:
       APP_NAME:
-        from_secret: app-name
+        from_secret: APP_NAME
       ENV_NODE:
         from_secret: env-mode
       CONSUL_ADDRESS:
