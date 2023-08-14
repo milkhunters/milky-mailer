@@ -15,7 +15,7 @@ steps:
         path: /var/run
     environment:
       APP_NAME:
-        from_secret: app-name
+        from_secret: APP_NAME
       ENV_MODE:
         from_secret: env-mode
       CONSUL_ADDRESS:
