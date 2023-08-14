@@ -20,10 +20,11 @@ steps:
         from_secret: env-mode
       CONSUL_ADDRESS:
         from_secret: consul-address
+    envs: [ APP_NAME, ENV_MODE, CONSUL_ADDRESS ]
     commands:
       - env
       - sleep 8
-      - docker build -t $${APP_NAME}-$${ENV_MODE}:$${DRONE_BUILD_NUMBER} .
+      - docker build -t ${APP_NAME}-${ENV_MODE}:${DRONE_BUILD_NUMBER} .
 
   - name: deploy
     image: docker:dind
@@ -37,8 +38,9 @@ steps:
         from_secret: env-mode
       CONSUL_ADDRESS:
         from_secret: consul-address
+    envs: [ APP_NAME, ENV_MODE, CONSUL_ADDRESS ]
     commands:
-      - docker run -d --restart=always --name $${APP_NAME}-$${ENV_MODE} -e APP_NAME=$${APP_NAME} -e CONSUL_ADDRESS=$${CONSUL_ADDRESS} -m 512m --cpus=1  $${APP_NAME}-$${ENV_MODE}:$${DRONE_BUILD_NUMBER}
+      - docker run -d --restart=always --name ${APP_NAME}-${ENV_MODE} -e APP_NAME=${APP_NAME} -e CONSUL_ADDRESS=${CONSUL_ADDRESS} -m 512m --cpus=1  ${APP_NAME}-${ENV_MODE}:${DRONE_BUILD_NUMBER}
 
 services:
   - name: docker
