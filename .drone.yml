@@ -3,23 +3,23 @@ type: docker
 name: build-and-deploy
 
 steps:
-- name: wait-docker-init
-  image: docker:dind
-  volumes:
-  - name: dockersock
-    path: /var/run
-  commands:
-  - sleep 5 ## give docker enough time to start
-  - docker ps -a
+  - name: wait-docker-init
+    image: docker:dind
+    volumes:
+      - name: dockersock
+        path: /var/run
+    commands:
+      - sleep 5 ## give docker enough time to start
+      - docker ps -a
 
-- name: docker  
-  image: docker:dind
+  - name: docker  
+    image: docker:dind
     #settings:
       #repo: registry.milkhunters.ru/milk-back
       #registry: registry.milkhunters.ru
-  commands:
-    - sleep 5
-    - docker build -t app-name-env-mode:DRONE_BUILD_NUMBER .
+    commands:
+      - sleep 5
+      - docker build -t app-name-env-mode:DRONE_BUILD_NUMBER .
 
   - name: deploy
     #privileged: true
@@ -28,13 +28,13 @@ steps:
       - docker run -d --restart=always -u 0 --name app-name-env-mode -e APP_NAME=app-name -e CONSUL_ADDRESS=consul-address -m 512m --cpus=1 app-name-env-mode:DRONE_BUILD_NUMBER
 
 services:
-- name: docker
-  image: docker:dind
-  privileged: true
-  volumes:
-  - name: dockersock
-    path: /var/run
+  - name: docker
+    image: docker:dind
+    privileged: true
+    volumes:
+    - name: dockersock
+      path: /var/run
 
 volumes:
-- name: dockersock
-  temp: {}
+  - name: dockersock
+    temp: {}
