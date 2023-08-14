@@ -17,6 +17,9 @@ steps:
     #settings:
       #repo: registry.milkhunters.ru/milk-back
       #registry: registry.milkhunters.ru
+    volumes:
+      - name: dockersock
+        path: /var/run
     commands:
       - sleep 5
       - docker build -t app-name-env-mode:DRONE_BUILD_NUMBER .
