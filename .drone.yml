@@ -1,18 +1,25 @@
 kind: pipeline
 type: docker
-name: build-and-deploy
+name: build-adn-deploy
 
 steps:
-  - name: docker  
-    image: plugins/docker
-    settings:
-      repo: registry.milkhunters.ru/milk-back
-      registry: registry.milkhunters.ru
-    commands:
-      - docker build -t app-name-env-mode:DRONE_BUILD_NUMBER .
-  
-  - name: deploy
-    privileged: true
-    image: docker:latest
-    commands:
-      - docker run -d --restart=always -u 0 --name app-name-env-mode -e APP_NAME=app-name -e CONSUL_ADDRESS=consul-address -m 512m --cpus=1 app-name-env-mode:DRONE_BUILD_NUMBER
+- name: build
+  image: docker:dind
+  volumes:
+  - name: dockersock
+    path: /var/run
+  commands:
+  - sleep 5 ## give docker enough time to start
+  - docker ps -a
+
+services:
+- name: docker
+  image: docker:dind
+  privileged: true
+  volumes:
+  - name: dockersock
+    path: /var/run
+
+volumes:
+- name: dockersock
+  temp: {}
