@@ -21,6 +21,7 @@ steps:
       CONSUL_ADDRESS:
         from_secret: consul-address
     commands:
+      - env
       - sleep 8
       - docker build -t $${APP_NAME}-$${ENV_MODE}:$${DRONE_BUILD_NUMBER} .
 
