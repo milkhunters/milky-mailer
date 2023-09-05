@@ -67,6 +67,7 @@ Message body is a `string` of type `ContentType`.
 Message `ContentType` is a MIMO type (example: `text/plain` or `text/html`). It field uses for email header `ContentType`. 
 
 ## TODO list
+- [ ] Add email exists check
 - [ ] Add support non-TLS SMTP connection
 - [ ] Add support for configuration without `Consul kv`
 - [ ] Add beautiful error handler
