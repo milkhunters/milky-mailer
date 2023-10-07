@@ -3,15 +3,27 @@ package main
 import (
 	"milky-mailer/internal/app"
 	"milky-mailer/internal/configer"
+	"os"
+	"strconv"
 )
 
 func main() {
-	// Get config
-	AMQPCfg, EmailCfg, err := configer.GetConfig()
+
+	consulHost := os.Getenv("CONSUL_HOST")
+	consulRoot := os.Getenv("CONSUL_ROOT")
+	consulPort, err := strconv.Atoi(os.Getenv("CONSUL_PORT"))
 	if err != nil {
 		panic(err)
 	}
 
-	// Run app
-	app.Run(AMQPCfg, EmailCfg)
+	config, err := configer.NewConfig(consulHost, consulRoot, consulPort)
+	if err != nil {
+		panic(err)
+	}
+
+	err = app.Run(config)
+	if err != nil {
+		panic(err)
+	}
+
 }

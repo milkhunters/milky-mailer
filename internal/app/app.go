@@ -1,98 +1,203 @@
 package app
 
-// TODO заменить amqp на amqp091-go
 import (
+	"errors"
 	"fmt"
 	"github.com/streadway/amqp"
 	"log"
 	"milky-mailer/internal/configer"
 	"milky-mailer/internal/mailer"
 	"os"
+	"strings"
 )
 
-// TODO Плохое решение. Надо переделать
-func handleError(err error, msg string) {
+func Run(config *configer.Config) error {
+
+	conn, err := amqp.DialConfig(
+		fmt.Sprintf(
+			"amqp://%s:%s@%s:%d",
+			config.AMQP.User,
+			config.AMQP.Password,
+			config.AMQP.Host,
+			config.AMQP.Port),
+		amqp.Config{
+			Vhost: config.AMQP.VHost,
+		})
 	if err != nil {
-		log.Fatalf("%s: %s", msg, err)
+		return errors.Join(err, errors.New("failed to connect to RabbitMQ"))
 	}
-}
-
-func Run(cfg *configer.AMQPConfig, mailerCfg *mailer.EmailSenderConfig) {
-
-	// TODO Экранизировать строки
-	conn, err := amqp.Dial(fmt.Sprintf("amqp://%s:%s@%s:%d/", cfg.User, cfg.Password, cfg.Host, cfg.Port))
-	handleError(err, "Can't connect to AMQP")
 	defer conn.Close()
 
 	amqpChannel, err := conn.Channel()
-	handleError(err, "Can't create a amqpChannel")
+	if err != nil {
+		return errors.Join(err, errors.New("failed to open a channel"))
+	}
 	defer amqpChannel.Close()
 
-	queue, err := amqpChannel.QueueDeclare(
-		cfg.Queue,
+	_, err = amqpChannel.QueueDeclare(
+		config.AMQP.Queue,
 		true,
 		false,
 		false,
 		false,
 		nil,
 	)
-	handleError(err, "Could not declare queue")
+	if err != nil {
+		return errors.Join(err, errors.New("failed to declare a queue"))
+	}
+
+	// create exchange
+	err = amqpChannel.ExchangeDeclare(
+		config.AMQP.Exchange,
+		"direct",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return errors.Join(err, errors.New("failed to declare a exchange"))
+	}
+
+	// bind queue to exchange
+	err = amqpChannel.QueueBind(
+		config.AMQP.Queue,
+		"",
+		config.AMQP.Exchange,
+		false,
+		nil,
+	)
+	if err != nil {
+		return errors.Join(err, errors.New("failed to bind a queue"))
+	}
 
 	err = amqpChannel.Qos(1, 0, false)
-	handleError(err, "Could not configure QoS")
+	if err != nil {
+		return errors.Join(err, errors.New("failed to set QoS"))
+	}
 
 	messageChannel, err := amqpChannel.Consume(
-		queue.Name,
-		"",
+		config.AMQP.Queue,
+		"milky-mailer",
 		false,
 		false,
 		false,
 		false,
 		nil,
 	)
-	handleError(err, "Could not register consumer")
+	if err != nil {
+		return errors.Join(err, errors.New("failed to register a consumer"))
+	}
 
 	stopChan := make(chan bool)
 
 	go func() {
 		log.Printf("Consumer ready, PID: %d", os.Getpid())
-		for d := range messageChannel {
+		for message := range messageChannel {
 
-			// TODO Использовать нативный ContentType
-			// Prepare message data
-			mailData := mailer.EmailData{
-				To:          d.Headers["To"].(string),
-				Subject:     d.Headers["Subject"].(string),
-				FromName:    d.Headers["FromName"].(string),
-				ContentType: d.ContentType,
-				Body:        string(d.Body),
+			// Verify message
+			var err error
+
+			if message.Headers["To"] == nil {
+				err = errors.Join(err, errors.New("header 'To' is empty"))
+			}
+			if message.Headers["Subject"] == nil {
+				err = errors.Join(err, errors.New("header 'Subject' is empty"))
+			}
+			if message.Headers["FromId"] == nil {
+				err = errors.Join(err, errors.New("header 'FromId' is empty"))
+			}
+			if message.ContentType != "text/plain" && message.ContentType != "text/html" {
+				err = errors.Join(err, errors.New("content type is not supported"))
+			}
+			if message.Body == nil {
+				err = errors.Join(err, errors.New("body is empty"))
 			}
 
-			// Log message
-			log.Printf(fmt.Sprintf("Received a message: \n To: %s \n Subject: %s \n ContentType: %s \n FromName: %s",
-				mailData.To,
-				mailData.Subject,
-				mailData.ContentType,
-				mailData.FromName,
+			// Check that FromId exist in config
+			if _, ok := config.Senders[message.Headers["FromId"].(string)]; !ok {
+				err = errors.Join(err, errors.New(fmt.Sprintf("sender '%s' is not exist in config", message.Headers["FromId"].(string))))
+			}
+
+			if err != nil {
+				log.Printf("Error verefy message: %s", err)
+
+				if err := message.Reject(false); err != nil {
+					log.Printf("Error rejecting message : %s", err)
+				} else {
+					log.Printf("Rejected message")
+				}
+			}
+
+			// Log all information about message
+			log.Printf(fmt.Sprintf(
+				"Received a message: \n "+
+					"To: %s \n "+
+					"Subject: %s \n "+
+					"ContentType: %s \n "+
+					"FromId: %s \n "+
+					"MessageId: %s \n "+
+					"Timestamp: %s \n "+
+					"AppId: %s \n "+
+					"Body: %s",
+
+				message.Headers["To"].(string),
+				message.Headers["Subject"].(string),
+				message.ContentType,
+				message.Headers["FromId"].(string),
+				message.MessageId,
+				message.Timestamp.String(),
+				message.AppId,
+				string(message.Body),
 			))
 
 			// Send email
-			err = mailer.SendEmail(mailerCfg, &mailData)
+			err = mailer.Send(
+				config.Senders[message.Headers["FromId"].(string)],
+				message.Headers["To"].(string),
+				message.Headers["Subject"].(string),
+				message.ContentType,
+				string(message.Body),
+			)
 			if err != nil {
 				log.Printf("Error send mail: %s", err)
+
+				fmt.Println(err.Error())
+				if strings.Contains(err.Error(), "550") {
+					fmt.Println("Message will be deleted from queue")
+					// reject without requeue
+					if err := message.Reject(false); err != nil {
+						log.Printf("Error rejecting message : %s", err)
+					} else {
+						log.Printf("Rejected message")
+					}
+
+					return
+				}
+
+				// Reject message and requeue
+				if err := message.Reject(true); err != nil {
+					log.Printf("Error rejecting message : %s", err)
+				} else {
+					log.Printf("Rejected message")
+				}
+
 				return
 			}
 
+			fmt.Println("Email send")
+
 			// Acknowledge that email was send
-			if err := d.Ack(false); err != nil {
+			if err := message.Ack(false); err != nil {
 				log.Printf("Error acknowledging message : %s", err)
 			} else {
 				log.Printf("Acknowledged message")
 			}
-
 		}
 	}()
 
 	// Stop for program termination
 	<-stopChan
+	return nil
 }
