@@ -10,5 +10,6 @@ RUN GOOS=linux GOARCH=amd64 go build -o main -buildvcs=false ./cmd/milky-mailer/
 FROM scratch
 
 COPY --from=build /app/main /main
+COPY --from=build /etc/ssl/certs/ /etc/ssl/certs/
 
 CMD ["./main"]
