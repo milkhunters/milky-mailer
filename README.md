@@ -1,7 +1,25 @@
 # Milky Mailer
-Simple AMQP based mailer on Golang
 
-[![Build Status](https://drone.milkhunters.ru/api/badges/milkhunters/milky-mailer/status.svg?ref=refs/heads/main)](https://drone.milkhunters.ru/milkhunters/milky-mailer)
+Простой сервис для отправки писем по протоколу SMTP. Использует очередь сообщений RabbitMQ для получения сообщений.
+
+## Содержание
+- [Docker Quick Start](#docker-quick-start)
+- [Способы конфигурации](#способы-конфигурации)
+  - [Consul kv](#consul-kv)
+- [Описание конфигурации](#описание-конфигурации)
+  - [AMQP (RabbitMQ)](#amqp-rabbitmq)
+  - [Отправители (Senders)](#отправители-senders)
+- [Отправка сообщений](#отправка-сообщений)
+- [Пример клиента](#пример-клиента)
+- [Состав сообщения](#состав-сообщения)
+  - [Заголовки сообщения](#заголовки-сообщения)
+  - [ContentType сообщения](#contenttype-сообщения)
+  - [Тело сообщения](#тело-сообщения)
+  - [Expiration](#expiration)
+  - [Приоритет сообщения](#приоритет-сообщения)
+    - [Пример возможного распределения приоритетов](#пример-возможного-распределения-приоритетов)
+  - [Дополнительные идентификаторы для отладки](#дополнительные-идентификаторы-для-отладки)
+- [Ограничения](#ограничения)
 
 ## Docker Quick Start
 Build the image:
@@ -13,68 +31,139 @@ And run it:
 docker run milky-mailer
 ```
 
-## Configuration
-
-### Environment variables and flags
-Milky Mailer uses environment variables and flags to get configuration from `Consul kv`.
-
-Environment variables have higher priority than flags.
-
-| Variable         | Description                                      | Default          |
-|------------------|--------------------------------------------------|------------------|
-| `APP_NAME`       | `Consul kv` prefix for application configuration | `milky-mailer`   |
-| `CONSUL_ADDRESS` | `Consul` address                                 | `localhost:8500` |
+## Способы конфигурации
 
 ### Consul kv
-Milky Mailer uses `Consul kv` to store configuration.
+**В данные момент поддерживается только конфигурация через Consul kv.**
 
-All values **required** for work.
+Для конфигурации через Consul kv необходимо указать следующие переменные окружения:
 
-| Key                       | Description                      | Example            |
-|---------------------------|----------------------------------|--------------------|
-| `APP_NAME/amqp/host`      | AMQP Host                        | `127.0.0.1`        |
-| `APP_NAME/amqp/port`      | AMQP Port                        | `5672`             |
-| `APP_NAME/amqp/user`      | AMQP User                        | `user`             |
-| `APP_NAME/amqp/password`  | AMQP Password                    | `somepassword`     |
-| `APP_NAME/amqp/queue`     | AMQP Queue                       | `email`            |
-| `APP_NAME/email/host`     | SMTP Host                        | `smtp.example.com` |
-| `APP_NAME/email/port`     | SMTP Port                        | `465`              |
-| `APP_NAME/email/user`     | SMTP User                        | `user@example.com` |
-| `APP_NAME/email/password` | SMTP Password                    | `somepassword`     |
-| `APP_NAME/email/from`     | E-mail address for `From` header | `user@example.com` |
+| Переменная    | Описание                               | Значение по умолчанию   |
+|---------------|----------------------------------------|-------------------------|
+| `CONSUL_ROOT` | Префикс ключей конфигурации приложения | `milky-mailer`          |
+| `CONSUL_HOST` | Адрес расположения консула             | `consul.servece.consul` |
+| `CONSUL_PORT` | Порт консула                           | `8500`                  |
+
+ACL токены и другие способы аутентификации не поддерживаются. Реализация планируется в ближайшем будущем.
+
+## Описание конфигурации
+
+Здесь и далее ключи конфигурации для `Consul KV` указаны относительно префикса `CONSUL_ROOT`.
+
+### AMQP (RabbitMQ)
+
+| Ключ (для `Consul KV`) | Описание                                                                | Пример         |
+|------------------------|-------------------------------------------------------------------------|----------------|
+| `amqp/host`            | Адрес хоста, на котором расположен RabbitMQ                             | `127.0.0.1`    |
+| `amqp/port`            | Порт, на котором расположен RabbitMQ                                    | `5672`         |
+| `amqp/user`            | Имя пользователя для подключения к RabbitMQ                             | `user`         |
+| `amqp/password`        | Пароль пользователя для подключения к RabbitMQ                          | `somepassword` |
+| `amqp/queue`           | Название очереди, из которой будут получаться сообщения для отправки    | `email`        |
+| `amqp/exchange`        | Название обменника, в который будут отправляться сообщения для отправки | `email`        |
+| `amqp/virtualHost`     | Виртуальный хост, на котором расположен RabbitMQ                        | `/`            |
 
 
-## TLS
-Milky Mailer support SMTP connection **only over TLS**.
+### Отправители (Senders)
 
-In the future, it will be possible to disable TLS.
+Можно указать несколько отправителей.
 
-## AMQP
-Milky Mailer uses `AMQP` to get messages from queue.
+Все отправители должны быть указаны в `/senders/` относительно `CONSUL_ROOT`.
 
-### Message headers
+| Ключ (для `Consul KV`)        | Описание                                                     | Пример             |
+|-------------------------------|--------------------------------------------------------------|--------------------|
+| `senders/<senderID>/`         | `senderID` - Уникальный идентификатор отправителя            | `mailer-one`       |
+| `senders/<senderID>/host`     | Адрес хоста, на котором расположен SMTP сервер               | `smtp.example.com` |
+| `senders/<senderID>/port`     | Порт, на котором расположен SMTP сервер                      | `465`              |
+| `senders/<senderID>/user`     | Имя пользователя для подключения к SMTP серверу              | `username`         |
+| `senders/<senderID>/password` | Пароль пользователя для подключения к SMTP серверу           | `somepassword`     |
+| `senders/<senderID>/from`     | E-mail адрес отправителя (указывается в `From` email письма) | `from@example.com` |
+| `senders/<senderID>/tls`      | Использовать TLS при подключении к SMTP серверу              | `true`             |
+| `senders/<senderID>/fromName` | Имя отправителя (указывается в `From` email письма)          | `Someteam corp.`   |
 
-| Header        | Description                      | Example                     |
-|---------------|----------------------------------|-----------------------------|
-| `To`          | E-mail address for `To` header   | `to.user@example.com`       |
-| `FromName`    | Name of sender for `From` header | `Milkteam corp.`            |
-| `Subject`     | E-mail subject                   | `Hello, world!`             |
 
-### Message body
-Message body is a `string` of type `ContentType`.
 
-### Message `ContentType`
-Message `ContentType` is a MIMO type (example: `text/plain` or `text/html`). It field uses for email header `ContentType`. 
+## Отправка сообщений
+Для отправки email письма необходимо отправить сообщение в обменник. Название обменника указывается в конфигурации.
 
-## TODO list
-- [ ] Add email exists check
-- [ ] Add support non-TLS SMTP connection
-- [ ] Add support for configuration without `Consul kv`
-- [ ] Add beautiful error handler
-- [ ] Add validation for messages from AMQP
-- [ ] Add tests
-- [ ] Use `viper` for configuration
-- [ ] Replace old `amqp` package to `amqp091-go`
+**Перед отправкой сообщения необходимо убедиться, что обменник существует.**
 
-## License
-Created by [MilkHunters team](https://milkhunters.ru) under [Creative Commons Zero v1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/) license.
+**Если обменник не существует, то скорее всего `milky-mailer` не запущен или конфигурация указана неверно.**
+
+## Пример клиента
+
+Пример клиента, написанного на `golang` можно найти в репозитории [milky-mailer-client](https://github.com/milkhunters/milky-mailer-client).
+
+
+## Состав сообщения
+
+### Заголовки сообщения
+
+| Заголовок | Описание                                        | Пример                 |
+|-----------|-------------------------------------------------|------------------------|
+| `To`      | E-mail адрес получателя                         | `to.user@example.com`  |
+| `Subject` | Тема e-mail письма                              | `Какая-то тема письма` |
+| `FromID`  | Идентификатор отправителя согласно конфигурации | `mailer-one`           |
+
+
+### `ContentType` сообщения
+Указывается в соответствии с MIME типами. Поддерживается только `text/plain` и `text/html`.
+
+Этот же тип используется для указания типа отправляемого email.
+
+### Тело сообщения
+Тело сообщения используется в исходном виде для формирования email.
+
+### Expiration
+Для каждого сообщения следует указывать время жизни. По истечении этого времени сообщение будет удалено из очереди, если
+оно не было отправлено получателю.
+
+Указывается в секундах.
+
+В случае, если время жизни не указано, оно не будет установлено и сообщение будет жить в очереди до тех пор, пока не
+будет отправлено получателю.
+
+Настоятельно рекомендуется указывать время жизни для каждого сообщения, исходя из ваших требований.
+
+### Приоритет сообщения
+Приоритет сообщения указывается в диапазоне от 0 до 255. Чем выше приоритет, тем выше вероятность того, что сообщение
+будет отправлено раньше других.
+
+Рекомендуется указывать приоритет для каждого сообщения, исходя из ваших требований.
+
+Сообщения, у которых не указан приоритет, будут иметь самый низкий приоритет.
+
+#### Пример возможного распределения приоритетов
+| Приоритет | Описание                                                              |
+|-----------|-----------------------------------------------------------------------|
+| 13        | Коды подтверждения регистрации и сбора пароля                         |
+| 12        | Ответы технической поддержки                                          |
+| 9-11      | Уведомления безопасности (вход в систему, смена пароля, почты и т.п.) |
+| 8         | Квитанция на оплату услуг/товара                                      |
+| 7         | Чек по оплате                                                         |
+| 6         | Запрос на изменение (прав и т.п.)                                     |
+| 3-5       | Прочие уведомления                                                    |
+| 0-2       | Новостная рассылка                                                    |
+
+В случаях, когда указано несколько возможных приоритетов для задачи, то можно сделать градацию приоритетов для неё:
+- `0` - низкий приоритет (Low)
+- `1` - нормальный приоритет (Normal)
+- `2` - высокий приоритет (High)
+
+### Дополнительные идентификаторы для отладки
+
+Для упрощения отладки и можно указать некоторые дополнительные параметры. Их наличие упростит отладку и поиск связанных
+логов в случае возникновения ошибок.
+
+- `MessageId` - уникальный идентификатор сообщения в виде строки.
+- `AppId` - идентификатор приложения, которое отправило сообщение.
+- `Timestamp` - время отправки сообщения в формате `Unix timestamp`.
+
+
+## Ограничения
+
+- Вложения (Attachments) не поддерживаются.
+- Поддерживается только один получатель (To).
+- Не поддерживается копия (CC) и скрытая копия (BCC).
+- Не поддерживается подтверждение доставки (Delivery Status Notification).
+- Не поддерживается Reply-To.
+- И многое другое, поддержка которого не указана в документации.
