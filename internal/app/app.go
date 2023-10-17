@@ -173,17 +173,16 @@ func Run(config *configer.Config) error {
 						log.Printf("Rejected message")
 					}
 
-					return
-				}
-
-				// Reject message and requeue
-				if err := message.Reject(true); err != nil {
-					log.Printf("Error rejecting message : %s", err)
+					continue
 				} else {
-					log.Printf("Rejected message")
+					// Reject message and requeue
+					if err := message.Reject(true); err != nil {
+						log.Printf("Error rejecting message : %s", err)
+					} else {
+						log.Printf("Rejected message")
+					}
+					continue
 				}
-
-				return
 			}
 
 			fmt.Println("Email send")
